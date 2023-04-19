@@ -8,16 +8,15 @@ from google.cloud import storage
 
 def exec_featurize():
     # Env
-    print('Start')
     BUCKET=os.getenv('BUCKET')
+    INPUT_BUCKET=os.getenv('INPUT_BUCKET')
     num_tasks_featurizer=int(os.environ.get('NUM_TASKS_FEATURIZER'))
-    BATCH_TASK_INDEX=os.getenv('BATCH_TASK_INDEX')
+    BATCH_TASK_INDEX=int(os.environ.get('BATCH_TASK_INDEX'))
+    print("BatchTaskIndex: " + str(BATCH_TASK_INDEX+1))
 
     # Download inputs
-    print(BUCKET)
-    print(num_tasks_featurizer)
     client= storage.Client()
-    bucket = client.bucket(BUCKET)
+    bucket = client.bucket(INPUT_BUCKET)
     blob = bucket.blob("input/X_raw")
     blob.download_to_filename("./X_raw")
 
@@ -39,10 +38,10 @@ def exec_featurize():
     sparse.save_npz(Xi_name, Xi)
     client= storage.Client()
     bucket = client.bucket(BUCKET)
-    blob = bucket.blob("featurized/"+Xi_name)
+    blob = bucket.blob("featurized/tmp/"+Xi_name)
     blob.upload_from_filename("./"+Xi_name)
 
-    print('complete')
+    print("- Complete -")
 
 if __name__ == '__main__':
     exec_featurize()
