@@ -3,13 +3,15 @@ import numpy as np
 import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import vstack
+from scipy import sparse
 from google.cloud import storage
 
 def exec_featurize():
     # Env
     print('Start')
     BUCKET=os.getenv('BUCKET')
-    num_tasks_featurizer=int(os.environ.get('num_tasks_featurizer'))
+    num_tasks_featurizer=int(os.environ.get('NUM_TASKS_FEATURIZER'))
+    BATCH_TASK_INDEX=os.getenv('BATCH_TASK_INDEX')
 
     # Download inputs
     print(BUCKET)
@@ -27,18 +29,18 @@ def exec_featurize():
     vectorizer = TfidfVectorizer(max_features=300)
     vectorizer.fit(X_raw)
     X = []
-    for i in range(10):
-        X.append(vectorizer.transform(X_raw[i * batch_size:(i + 1) * batch_size]))
-    X = vstack(X)  # Convert X from a list of csr_matrix to just a csr_matrix
+    # for i in range(10):
+    #     X.append(vectorizer.transform(X_raw[i * batch_size:(i + 1) * batch_size]))
+    # X = vstack(X)  # Convert X from a list of csr_matrix to just a csr_matrix
 
-    # Upload to bucket
-    f = open('X', 'wb')
-    pickle.dump(X, f)
+    Xi_name = "X"+str(BATCH_TASK_INDEX)+".npz"
+    Xi=vectorizer.transform(X_raw[BATCH_TASK_INDEX * batch_size:(BATCH_TASK_INDEX + 1) * batch_size])
 
+    sparse.save_npz(Xi_name, Xi)
     client= storage.Client()
     bucket = client.bucket(BUCKET)
-    blob = bucket.blob("featurized/X")
-    blob.upload_from_filename("./X")
+    blob = bucket.blob("featurized/"+Xi_name)
+    blob.upload_from_filename("./"+Xi_name)
 
     print('complete')
 

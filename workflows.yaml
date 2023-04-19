@@ -7,15 +7,20 @@ main:
           - region: "us-central1"
           - batchApi: "batch.googleapis.com/v1"
           - batchApiUrl: ${"https://" + batchApi + "/projects/" + projectId + "/locations/" + region + "/jobs"}
-          - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/containers/primegen-service:v1"}
-          - jobId: ${"simple-wf-job-primegen-" + string(int(sys.now()))}
-          - bucket: "keihoshino-batch-workflows-test-bucket"
-    - createAndRunBatchJob:
+          - featurizerImageUri: ${region + "-docker.pkg.dev/" + projectId + "/containers/featurize:v1"}
+          - trainerImageUri: ${region + "-docker.pkg.dev/" + projectId + "/containers/train:v1"}
+          - jobId: ${"job-" + string(int(sys.now()))}
+          - featurizerJobId: ${"featurizer-" + jobId}
+          - trainerJobId: ${"trainer-" + jobId}
+          - bucket: "batch-test-keihoshino01"
+          - num_tasks_featurizer: "10"
+          - num_tasks_trainer: "5"
+    - featurizerBatchJob:
         call: http.post
         args:
           url: ${batchApiUrl}
           query:
-            job_id: ${jobId}
+            job_id: ${featurizerJobId}
           headers:
             Content-Type: application/json
           auth:
@@ -25,12 +30,13 @@ main:
               taskSpec:
                 runnables:
                   - container:
-                      imageUri: ${imageUri}
+                      imageUri: ${featurizerImageUri}
                     environment:
                       variables:
                         BUCKET: ${bucket}
-              taskCount: 9
-              parallelism: 3
+                        NUM_TASKS_FEATURIZER: ${num_tasks_featurizer}
+              taskCount: ${num_tasks_featurizer}
+              parallelism: ${num_tasks_featurizer}
             allocationPolicy: {
               instances: [
                 {
@@ -43,8 +49,85 @@ main:
             }
             logsPolicy:
               destination: CLOUD_LOGGING
-        result: createAndRunBatchJobResponse
+        result: featurizerBatchJobResponse
+    - getFeaturizerJob:
+        call: http.get
+        args:
+          url: ${batchApiUrl + "/" + featurizerJobId}
+          auth:
+            type: OAuth2
+        result: getFeaturizerJobResult
+    - FeaturizerlogState:
+        call: sys.log
+        args:
+          data: ${"Current job state " + getFeaturizerJobResult.body.status.state}
+    - FeaturizercheckState:
+        switch:
+          - condition: ${getFeaturizerJobResult.body.status.state == "SUCCEEDED"}
+            next: trainBatchJob
+        next: getFeaturizersleep
+    - getFeaturizersleep:
+        call: sys.sleep
+        args:
+          seconds: 10
+        next: getFeaturizerJob
+    - trainBatchJob:
+        call: http.post
+        args:
+          url: ${batchApiUrl}
+          query:
+            job_id: ${trainerJobId}
+          headers:
+            Content-Type: application/json
+          auth:
+            type: OAuth2
+          body:
+            taskGroups:
+              taskSpec:
+                runnables:
+                  - container:
+                      imageUri: ${trainerImageUri}
+                    environment:
+                      variables:
+                        BUCKET: ${bucket}
+                        NUM_TASKS_TRAINER: ${num_tasks_trainer}
+              taskCount: 1
+              parallelism: 1
+            allocationPolicy: {
+              instances: [
+                {
+                  policy: {
+                    provisioningModel: SPOT,
+                    machineType: e2-highcpu-8
+                  }
+                }
+              ]
+            }
+            logsPolicy:
+              destination: CLOUD_LOGGING
+        result: trainBatchJobResponse
+    - getTrainerJob:
+        call: http.get
+        args:
+          url: ${batchApiUrl + "/" + trainerJobId}
+          auth:
+            type: OAuth2
+        result: getTrainerJobResult
+    - logState:
+        call: sys.log
+        args:
+          data: ${"Current job state " + getTrainerJobResult.body.status.state}
+    - checkState:
+        switch:
+          - condition: ${getTrainerJobResult.body.status.state == "SUCCEEDED"}
+            next: trainBatchJob
+        next: sleep
+    - sleep:
+        call: sys.sleep
+        args:
+          seconds: 10
+        next: getTrainerJob
     - returnResult:
         return:
-          jobId: ${jobId}
+          jobId: ${trainerJobId}
           bucket: ${bucket}
