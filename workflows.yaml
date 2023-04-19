@@ -1,0 +1,50 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - projectId: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: "us-central1"
+          - batchApi: "batch.googleapis.com/v1"
+          - batchApiUrl: ${"https://" + batchApi + "/projects/" + projectId + "/locations/" + region + "/jobs"}
+          - imageUri: ${region + "-docker.pkg.dev/" + projectId + "/containers/primegen-service:v1"}
+          - jobId: ${"simple-wf-job-primegen-" + string(int(sys.now()))}
+          - bucket: "keihoshino-batch-workflows-test-bucket"
+    - createAndRunBatchJob:
+        call: http.post
+        args:
+          url: ${batchApiUrl}
+          query:
+            job_id: ${jobId}
+          headers:
+            Content-Type: application/json
+          auth:
+            type: OAuth2
+          body:
+            taskGroups:
+              taskSpec:
+                runnables:
+                  - container:
+                      imageUri: ${imageUri}
+                    environment:
+                      variables:
+                        BUCKET: ${bucket}
+              taskCount: 9
+              parallelism: 3
+            allocationPolicy: {
+              instances: [
+                {
+                  policy: {
+                    provisioningModel: SPOT,
+                    machineType: e2-highcpu-2
+                  }
+                }
+              ]
+            }
+            logsPolicy:
+              destination: CLOUD_LOGGING
+        result: createAndRunBatchJobResponse
+    - returnResult:
+        return:
+          jobId: ${jobId}
+          bucket: ${bucket}
