@@ -1,7 +1,29 @@
 # wf-batch-practical
 
+Edit .env
+
 ```
-gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/featurize:v1 ./
+source .env
+```
+
+```
+gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/featurize:v1 /home/admin_/batch-demo/wf-batch-practical/container/1.featurize/1.1.featurize-inParallel/
+```
+
+```
+gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/feature-aggregation:v1 /home/admin_/batch-demo/wf-batch-practical/container/1.featurize/1.2.featuresAggregation/
+```
+
+```
+gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/train:v1 /home/admin_/batch-demo/wf-batch-practical/container/2.train_and_eval/
+```
+
+```
+gcloud workflows deploy newsgroups-workflow   --source=/home/admin_/batch-demo/wf-batch-practical/workflows.yaml   --location=us-central1   --service-account=$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com
+```
+
+```
+gcloud workflows run newsgroups-workflow   --location=us-central1 >/dev/null
 ```
 
 ```
