@@ -15,7 +15,7 @@ gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/feat
 ```
 
 ```
-gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/train:v1 /home/admin_/batch-demo/wf-batch-practical/container/2.train_and_eval/
+gcloud builds submit   -t us-central1-docker.pkg.dev/$PROJECT_ID/containers/train:v1 /home/admin_/batch-demo/wf-batch-practical/container/2.train_and_eval/2.1.train-inParallel/
 ```
 
 ```
