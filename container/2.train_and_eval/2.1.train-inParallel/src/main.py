@@ -2,14 +2,11 @@ import numpy as np
 import os
 import pickle
 from scipy import sparse
-# from sklearn.model_selection import KFold
-# from sklearn.metrics import f1_score, accuracy_score
-# from sklearn.ensemble import RandomForestClassifier
-# import cuml
-from cuml.model_selection import KFold
-from cuml.metrics import f1_score, accuracy_score
-from cuml.ensemble import RandomForestClassifier
-
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import KFold
+from sklearn.metrics import f1_score, accuracy_score
+from sklearn.ensemble import RandomForestClassifier
 from google.cloud import storage
 import time
 
@@ -38,7 +35,6 @@ def exec_train():
 
     split = list(KFold(n_splits=num_tasks_trainer, shuffle=True, random_state=42).split(y))
 
-    clf = RandomForestClassifier(n_jobs=-1, random_state=42)
     clf = RandomForestClassifier(n_jobs=-1, random_state=42)
 
     train_index, test_index = split[BATCH_TASK_INDEX]

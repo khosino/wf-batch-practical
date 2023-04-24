@@ -10,7 +10,7 @@ def exec_featurize():
     # Env
     print('- Start -')
     BUCKET=os.getenv('BUCKET')
-
+    
     # Download inputs
     client= storage.Client()
     bucket = client.get_bucket(BUCKET)

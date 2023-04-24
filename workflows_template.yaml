@@ -173,6 +173,7 @@ main:
                 runnables:
                   - container:
                       imageUri: ${trainerImageUri}
+                      #imageUri: gcr.io/google_containers/cuda-vector-add:v0.1
                       volumes: [
                           "/var/lib/nvidia/lib64:/usr/local/nvidia/lib64",
                           "/var/lib/nvidia/bin:/usr/local/nvidia/bin"
@@ -280,6 +281,7 @@ main:
     - returnResult:
         return:
           message: ${"The underlying batch job " + jobId + " succeeded"}
+          output: ${resultAggregationBatchJobResponse.body}
           bucket: ${bucket}          
     - failExecution:
         raise:
